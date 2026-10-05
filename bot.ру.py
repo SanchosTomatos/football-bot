@@ -7,25 +7,14 @@ import time
 import sqlite3
 import threading
 import random
-import os
 from concurrent.futures import ThreadPoolExecutor
-from dotenv import load_dotenv
-import os
 
-# Указываем точный путь к файлу .env (замени на свой путь!)
-env_path = r"C:\Users\Fam\Desktop\проект 9 класс\My_bot_AMVERA\.env"
-load_dotenv(dotenv_path=env_path)
-
-# === НАСТРОЙКИ (БЕЗОПАСНОЕ ХРАНЕНИЕ КЛЮЧЕЙ) ===
-TOKEN = os.getenv("BOT_TOKEN")
-API_KEY = os.getenv("FOOTBALL_API_KEY")
+# === НАСТРОЙКИ ===
+TOKEN = "8645021086:AAHA3bRjMQ-c2wDXsac7qb9kojoHuZS8hpQ"
+API_KEY = "befc74bd983646378fe2f46eb747f790"
 BASE_URL = "https://api.football-data.org/v4"
-DB_NAME = 'data/bot_database.db'  # Путь для Amvera (постоянное хранилище)
-DEVELOPER_USERNAME = "Fallen_angel_discord"
-
-# Проверка наличия ключей
-if not TOKEN or not API_KEY:
-    raise ValueError("❌ Не найдены BOT_TOKEN или FOOTBALL_API_KEY в переменных окружения!")
+DB_NAME = 'bot_database.db'
+DEVELOPER_USERNAME = "Fallen_angel_discord"  # Твой Telegram username
 
 # === АВТОМАТИЧЕСКОЕ ПЕРЕПОДКЛЮЧЕНИЕ ===
 class AutoReconnectBot(telebot.TeleBot):
@@ -46,10 +35,10 @@ class AutoReconnectBot(telebot.TeleBot):
                     'Max retries exceeded'
                 ]):
                     print(f"\n⚠️ СЕТЕВАЯ ОШИБКА: {error_msg[:100]}")
-                    print(f"⏳ Переподключение через {self.reconnect_delay} секунд...\n")
+                    print(f" Переподключение через {self.reconnect_delay} секунд...\n")
                     time.sleep(self.reconnect_delay)
                 else:
-                    print(f"\n❌ ДРУГАЯ ОШИБКА: {e}")
+                    print(f"\n ДРУГАЯ ОШИБКА: {e}")
                     time.sleep(self.reconnect_delay)
 
 bot = AutoReconnectBot(TOKEN)
@@ -58,10 +47,6 @@ user_data = {}
 last_match = {}
 team_cache = {}
 db_lock = threading.Lock()
-
-# Создаём папку data, если её нет (для Amvera)
-if not os.path.exists('data'):
-    os.makedirs('data')
 
 # === ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ===
 def init_db():
@@ -96,9 +81,9 @@ russian_to_english = {
 }
 
 LEAGUES = {
-    'PL':  '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League (Англия)',
+    'PL':  '🏴󠁢󠁥󠁮󠁧󠁿 Premier League (Англия)',
     'PD':  '🇪🇸 La Liga (Испания)',
-    'BL1': '🇩🇪 Bundesliga (Германия)',
+    'BL1': '🇪 Bundesliga (Германия)',
     'SA':  '🇮🇹 Serie A (Италия)',
     'FL1': '🇫🇷 Ligue 1 (Франция)',
     'PPL': '🇵🇹 Primeira Liga (Португалия)',
@@ -117,14 +102,14 @@ def main_menu():
 
 def cancel_markup():
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add("❌ Отмена")
+    markup.add(" Отмена")
     return markup
 
 def prediction_buttons(team1_full, team2_full, winner):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     btn1 = telebot.types.InlineKeyboardButton("🔄 Другой матч", callback_data="new_match")
     winner_name = team1_full if winner == 1 else team2_full
-    btn2 = telebot.types.InlineKeyboardButton(f"📊 Статистика {winner_name}", callback_data=f"stats_{winner}")
+    btn2 = telebot.types.InlineKeyboardButton(f" Статистика {winner_name}", callback_data=f"stats_{winner}")
     btn3 = telebot.types.InlineKeyboardButton(f"📅 След. матч {team1_full}", callback_data=f"next_{team1_full}")
     btn4 = telebot.types.InlineKeyboardButton(f"📅 След. матч {team2_full}", callback_data=f"next_{team2_full}")
     markup.add(btn1, btn2, btn3, btn4)
@@ -133,7 +118,7 @@ def prediction_buttons(team1_full, team2_full, winner):
 def stats_buttons(team_name):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     btn1 = telebot.types.InlineKeyboardButton(f"⚽ Матч с {team_name}", callback_data=f"match_with_{team_name}")
-    btn2 = telebot.types.InlineKeyboardButton(f"📅 Следующий матч", callback_data=f"next_{team_name}")
+    btn2 = telebot.types.InlineKeyboardButton(f" Следующий матч", callback_data=f"next_{team_name}")
     btn3 = telebot.types.InlineKeyboardButton("🏠 В меню", callback_data="main_menu")
     markup.add(btn1, btn2, btn3)
     return markup
@@ -154,6 +139,7 @@ def league_table_buttons(league_code):
     return markup
 
 def help_buttons():
+    """Кнопки для меню помощи — включает связь с разработчиком."""
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     btn1 = telebot.types.InlineKeyboardButton(
         "💬 Написать разработчику", 
@@ -326,12 +312,12 @@ def callback_handler(call):
         elif call.data == "new_match":
             if chat_id in user_data: del user_data[chat_id]
             user_data[chat_id] = {'step': 1}
-            bot.send_message(chat_id, "🔄 Начинаем новый прогноз!\n\nВведите ПЕРВУЮ команду:", reply_markup=cancel_markup())
+            bot.send_message(chat_id, " Начинаем новый прогноз!\n\nВведите ПЕРВУЮ команду:", reply_markup=cancel_markup())
         elif call.data.startswith("stats_"):
             winner_num = int(call.data.split("_")[1])
             if chat_id in last_match and 'teams' in last_match[chat_id]:
                 team_name = last_match[chat_id]['teams'][winner_num - 1]
-                bot.send_message(chat_id, f"⏳ Загружаю: {team_name}...")
+                bot.send_message(chat_id, f" Загружаю: {team_name}...")
                 process_stats(chat_id, team_name)
             else:
                 bot.send_message(chat_id, "Введите название команды:", reply_markup=cancel_markup())
@@ -401,7 +387,7 @@ def random_match(message):
         ('Paris Saint-Germain', 'Marseille'), ('Arsenal', 'Chelsea')
     ]
     team1, team2 = random.choice(top_teams)
-    bot.send_message(message.chat.id, f"🎲 Случайный матч: *{team1}* vs *{team2}*\n\nНачинаю анализ...", parse_mode='Markdown')
+    bot.send_message(message.chat.id, f" Случайный матч: *{team1}* vs *{team2}*\n\nНачинаю анализ...", parse_mode='Markdown')
     
     if message.chat.id in user_data: del user_data[message.chat.id]
     user_data[message.chat.id] = {'step': 2, 'team1': team1}
@@ -416,13 +402,13 @@ def process_prediction(chat_id, team1_name, team2_name):
     print(f"📊 Найдено: {team1_full} (ID: {team1_id}) и {team2_full} (ID: {team2_id})")
     
     if not team1_id:
-        bot.send_message(chat_id, f"❌ Команда '{team1_name}' не найдена.", reply_markup=main_menu())
+        bot.send_message(chat_id, f" Команда '{team1_name}' не найдена.", reply_markup=main_menu())
         try: bot.delete_message(chat_id, loading_msg.message_id)
         except: pass
         return
     
     if not team2_id:
-        bot.send_message(chat_id, f"❌ Команда '{team2_name}' не найдена.", reply_markup=main_menu())
+        bot.send_message(chat_id, f" Команда '{team2_name}' не найдена.", reply_markup=main_menu())
         try: bot.delete_message(chat_id, loading_msg.message_id)
         except: pass
         return
@@ -450,7 +436,7 @@ def process_prediction(chat_id, team1_name, team2_name):
         response += f"   Ничьи: *{h2h_data['draws']}*\n"
         response += f"   {team2_full}: *{h2h_data['team2_wins']} побед*\n\n"
     
-    response += f"📊 *Форма (последние 5 матчей):*\n\n🔹 *{team1_full}:*\n"
+    response += f" *Форма (последние 5 матчей):*\n\n🔹 *{team1_full}:*\n"
     response += f"   Результаты: {' '.join(stats1['results'])}\n"
     response += f"   Очки: {stats1['points']} | Голы: {stats1['goals_scored']}/{stats1['goals_conceded']}\n"
     response += f"   🏠 Дома: {stats1['home_points']} очк | ✈️ В гостях: {stats1['away_points']} очк\n\n"
@@ -484,7 +470,7 @@ def process_stats(chat_id, team_name):
     response = f"📊 *Статистика {team_full}*\n\n"
     response += f"Последние {stats['matches']} матчей:\nРезультаты: {' '.join(stats['results'])}\n\n"
     response += f"⚽ Забито: {stats['goals_scored']}\n🛡️ Пропущено: {stats['goals_conceded']}\n"
-    response += f"📈 Разница: {stats['goals_scored'] - stats['goals_conceded']:+d}\n🏆 Очки: {stats['points']}\n\n"
+    response += f"📈 Разница: {stats['goals_scored'] - stats['goals_conceded']:+d}\n Очки: {stats['points']}\n\n"
     response += f"🏠 *Дома:* {stats['home_points']} очков ({stats['home_won']}В {stats['home_draw']}Н {stats['home_lost']}П)\n"
     response += f"✈️ *В гостях:* {stats['away_points']} очков ({stats['away_won']}В {stats['away_draw']}Н {stats['away_lost']}П)"
     
@@ -516,7 +502,7 @@ def show_next_match(chat_id, team_name):
         response += f"🏟️ *{competition}*\n📆 {date_str} в {time_str} (UTC)\n   {home_team} vs {away_team}\n\n"
     
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    btn = telebot.types.InlineKeyboardButton("🏠 В меню", callback_data="main_menu")
+    btn = telebot.types.InlineKeyboardButton(" В меню", callback_data="main_menu")
     markup.add(btn)
     bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=markup)
 
@@ -611,7 +597,8 @@ def calculate_probability_advanced(stats1, stats2, h2h_data):
     
     r1 = avg1 + (diff1 * 0.5)
     r2 = avg2 + (diff2 * 0.5)
-    r1 = r1 * 1.15
+    
+    r1 = r1 * 1.15 # Домашнее преимущество
     
     if len(stats1['results']) >= 2: r1 += sum(1 for r in stats1['results'][-2:] if r == 'В') * 0.3
     if len(stats2['results']) >= 2: r2 += sum(1 for r in stats2['results'][-2:] if r == 'В') * 0.3
@@ -662,7 +649,7 @@ def format_mobile_table(teams, league_name, season_year, league_code):
     zones = {'PL': {'champions_league': 4, 'europa_league': 5, 'relegation': 18}, 'PD': {'champions_league': 4, 'europa_league': 5, 'relegation': 18}, 'BL1': {'champions_league': 4, 'europa_league': 5, 'relegation': 16}, 'SA': {'champions_league': 4, 'europa_league': 5, 'relegation': 18}, 'FL1': {'champions_league': 3, 'europa_league': 4, 'relegation': 18}, 'PPL': {'champions_league': 2, 'europa_league': 3, 'relegation': 16}, 'CL': {'champions_league': 8, 'europa_league': 8, 'relegation': 36}}
     zone_info = zones.get(league_code, {'champions_league': 4, 'europa_league': 5, 'relegation': 18})
     
-    table = f"🏆 *{league_name}*\n📅 Сезон {season_year}/{int(season_year)+1}\n\n"
+    table = f" *{league_name}*\n📅 Сезон {season_year}/{int(season_year)+1}\n\n"
     for i, entry in enumerate(teams):
         pos = entry.get('position', i + 1)
         team_name = entry.get('team', {}).get('shortName') or entry.get('team', {}).get('name', '?')
@@ -671,15 +658,15 @@ def format_mobile_table(teams, league_name, season_year, league_code):
         if pos == 1: pos_emoji = "🥇"
         elif pos == 2: pos_emoji = "🥈"
         elif pos == 3: pos_emoji = "🥉"
-        elif pos <= zone_info['champions_league']: pos_emoji = "🟢"
+        elif pos <= zone_info['champions_league']: pos_emoji = ""
         elif pos <= zone_info['europa_league']: pos_emoji = "🔵"
         elif pos >= zone_info['relegation']: pos_emoji = "🔴"
         else: pos_emoji = "⚪"
         
         table += f"{pos_emoji} *{pos}. {team_name}*\n   {played} матчей | {won}В {draw}Н {lost}П | *{points} очков*\n\n"
     
-    table += "━━━━━━━━━━━━━━━━━━━━\n*Легенда:* 🟢 ЛЧ | 🔵 ЛЕ | 🔴 Вылет | ⚪ Середина\n"
-    table += f"📊 _Показаны все {len(teams)} команд_"
+    table += "━━━━━━━━━━━━━━━━━━━━\n*Легенда:* 🟢 ЛЧ |  ЛЕ | 🔴 Вылет | ⚪ Середина\n"
+    table += f" _Показаны все {len(teams)} команд_"
     return table
 
 def translate_russian_team_name(team_name):
@@ -715,7 +702,7 @@ def find_team(team_name):
         print(f"   ⚡ ШАГ 1: Найдено в ОПЕРАТИВНОМ КЭШЕ: {team_cache[name_lower][1]}")
         return team_cache[name_lower]
     else:
-        print(f"   ⏭️ ШАГ 1: В оперативном кэше не найдено")
+        print(f"   ️ ШАГ 1: В оперативном кэше не найдено")
     
     print(f"   🗄️ ШАГ 2: Проверяю базу данных...")
     db_result = get_team_from_db(name_lower)
@@ -794,5 +781,5 @@ def find_team(team_name):
     print(f"{'='*50}\n")
     return None, None
 
-print("🚀 Бот с безопасным хранением ключей запущен!")
+print(" Бот с функцией связи с разработчиком запущен!")
 bot.infinity_polling()
