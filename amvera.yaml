@@ -1,0 +1,10 @@
+  meta:
+  environment: python
+  toolchain:
+    name: python
+    version: "3.11"
+build:
+  requirements: requirements.txt
+run:
+  scriptName: bot.py
+  persistentMountPath: /app/data
