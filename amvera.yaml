@@ -1,9 +1,0 @@
-meta:
-  environment: python
-  toolchain:
-    name: pip
-build:
-  requirementsPath: requirements.txt
-run:
-  scriptName: bot.py
-  persistentMountPath: /app/data
