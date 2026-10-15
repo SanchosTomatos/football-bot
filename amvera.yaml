@@ -1,4 +1,4 @@
-  meta:
+meta:
   environment: python
   toolchain:
     name: python
